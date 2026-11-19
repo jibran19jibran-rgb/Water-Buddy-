@@ -1,0 +1,43 @@
+name: Build APK and XAPK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build release APK
+        run: gradle --no-daemon assembleRelease
+
+      - name: Make APK and XAPK
+        run: |
+          mkdir -p dist xapk
+          cp app/build/outputs/apk/release/app-release.apk dist/PaaniReminder.apk
+          cp dist/PaaniReminder.apk xapk/com.waterbuddy.app.apk
+          printf '{"xapk_version":2,"package_name":"com.waterbuddy.app","name":"Paani Reminder","version_code":"1","version_name":"1.0","min_sdk_version":"26","target_sdk_version":"34","permissions":[],"split_apks":[{"file":"com.waterbuddy.app.apk","id":"base"}]}' > xapk/manifest.json
+          (cd xapk && zip -r ../dist/PaaniReminder.xapk .)
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ github.run_number }}" dist/PaaniReminder.apk dist/PaaniReminder.xapk \
+            --title "Paani Reminder build ${{ github.run_number }}" \
+            --notes "PaaniReminder.apk install karein."
