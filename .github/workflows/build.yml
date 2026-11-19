@@ -41,3 +41,4 @@ jobs:
           gh release create "v${{ github.run_number }}" dist/PaaniReminder.apk dist/PaaniReminder.xapk \
             --title "Paani Reminder build ${{ github.run_number }}" \
             --notes "PaaniReminder.apk install karein."
+            gradle build --scan
